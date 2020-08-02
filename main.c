@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-
 typedef enum {
     TK_RESERVED,
     TK_NUM,
@@ -24,20 +23,48 @@ struct Token {
 
 Token* token;
 
-void error(const char *fmt, ...) {
+int eprintf(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+void error(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     va_end(ap);
-    fprintf(stderr, "\n");
+
+    eprintf("\n");
     exit(1);
+}
+
+char *user_input;
+
+void error_at(char* loc, char* fmt, ...) {
+  int pos = loc - user_input;
+  eprintf("pos: %d\n", pos);
+
+  eprintf("%s\n", user_input);
+  eprintf("%*s", pos, ""); // pos個の空白を出力
+  eprintf("^ ");
+
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+
+  eprintf("\n");
+  exit(1);
 }
 
 void debug_tk(TokenKind tk) {
     switch (tk) {
-        case TK_RESERVED: fputs("TK_RESERVED\n", stderr); break;
-        case TK_NUM: fputs("TK_NUM\n", stderr); break;
-        case TK_EOF: fputs("TK_EOF\n", stderr); break;
+        case TK_RESERVED: eprintf("TK_RESERVED\n"); break;
+        case TK_NUM: eprintf("TK_NUM\n"); break;
+        case TK_EOF: eprintf("TK_EOF\n"); break;
     }
 }
 
@@ -49,15 +76,9 @@ bool consume(char op) {
     return true;
 }
 
-void expect(char op) {
-    if (!consume(op)) {
-        error("not '%c'", op);
-    }
-}
-
 num_t expect_num() {
     if (token->kind != TK_NUM) {
-        error("not a number");
+        error_at(token->str, "not a number");
     }
     num_t ret = token->num;
     token = token->next;
@@ -80,6 +101,7 @@ Token* new_token(TokenKind kind, Token* cur, char* str) {
 Token* tokenize(char* p) {
     Token head;
     head.next = NULL;
+    head.str = p;
     Token* cur = &head;
 
     while (*p) {
@@ -97,7 +119,7 @@ Token* tokenize(char* p) {
             continue;
         }
 
-        error("unexpected character '%c'", *p);
+        error_at(cur->str == head.str ? cur->str : cur->str+1, "unexpected character");
     }
 
     new_token(TK_EOF, cur, p);
@@ -114,9 +136,9 @@ int main(int argc, char** argv) {
     printf(".globl _main\n");
     printf("_main:\n");
 
-    char* p = argv[1];
+    user_input = argv[1];
+    char* p = user_input;
     token = tokenize(p);
-
 
     printf("\tmov rax, %ld\n", expect_num());
 
@@ -126,7 +148,7 @@ int main(int argc, char** argv) {
         } else if (consume('-')) {
             printf("\tsub rax, %ld\n", expect_num());
         } else {
-            error("unexpected character '%c'", token->str[0]);
+            error_at(token->str, "unexpected character");
         }
     }
 
