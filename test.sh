@@ -1,10 +1,10 @@
 #!/bin/sh
 
 assert() {
-    expected=$1
-    input=$2
+    expected="$1"
+    input="$2"
 
-    ./mycc $input > tmp.s
+    ./mycc "$input" > tmp.s
     if [ $? -ne 0 ]; then
         echo "compilation failed"
         exit 1
@@ -28,5 +28,6 @@ assert() {
 assert 0 0
 assert 42 42
 assert 21 "5+20-4"
+assert 41 " 12 + 34 - 5 "
 
 echo OK
