@@ -5,7 +5,15 @@ assert() {
     input=$2
 
     ./mycc $input > tmp.s
+    if [ $? -ne 0 ]; then
+        echo "compilation failed"
+        exit 1
+    fi
     cc -o tmp tmp.s
+    if [ $? -ne 0 ]; then
+        echo "link failed"
+        exit 1
+    fi
     ./tmp
     actual=$?
 
@@ -19,5 +27,6 @@ assert() {
 
 assert 0 0
 assert 42 42
+assert 21 "5+20-4"
 
 echo OK
