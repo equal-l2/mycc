@@ -45,7 +45,6 @@ char *user_input;
 
 void error_at(char* loc, char* fmt, ...) {
   int pos = loc - user_input;
-  eprintf("pos: %d\n", pos);
 
   eprintf("%s\n", user_input);
   eprintf("%*s", pos, ""); // pos個の空白を出力
@@ -68,12 +67,18 @@ void debug_tk(TokenKind tk) {
     }
 }
 
-bool consume(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op) {
+bool consume(char c) {
+    if (token->kind != TK_RESERVED || token->str[0] != c) {
         return false;
     }
     token = token->next;
     return true;
+}
+
+void expect(char c) {
+    if (!consume(c)) {
+        error_at(token->str, "not '%c'", c);
+    }
 }
 
 num_t expect_num() {
@@ -114,12 +119,18 @@ Token* tokenize(char* p) {
             cur->num = strtol(p, &p, 10);
             continue;
         }
-        if (*p == '+' || *p == '-') {
-            cur = new_token(TK_RESERVED, cur, p++);
-            continue;
+        switch (*p) {
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+            case '(':
+            case ')':
+                cur = new_token(TK_RESERVED, cur, p++);
+                break;
+            default:
+                error_at(cur->str == head.str ? cur->str : cur->str+1, "unexpected character");
         }
-
-        error_at(cur->str == head.str ? cur->str : cur->str+1, "unexpected character");
     }
 
     new_token(TK_EOF, cur, p);
@@ -165,18 +176,44 @@ mul     = primary ("*" primary | "/" primary)*
 primary = num | "(" expr ")"
  */
 
-/*
-expr = num ("+" num | "-" num)*
- */
+Node* expr(void);
 
-Node* expr() {
-    Node* node = new_node_num(expect_num());
+Node* num(void) {
+    return new_node_num(expect_num());
+}
+
+Node* primary(void) {
+    Node* node;
+    if ( consume('(')) {
+        node = expr();
+        expect(')');
+    } else {
+        node = num();
+    }
+    return node;
+}
+
+Node* mul(void) {
+    Node* node = primary();
+    while (true) {
+        if (consume('*')) {
+            node = new_node(ND_MUL, node, primary());
+        } else if (consume('/')) {
+            node = new_node(ND_DIV, node, primary());
+        } else {
+            return node;
+        }
+    }
+}
+
+Node* expr(void) {
+    Node* node = mul();
 
     while (true) {
         if (consume('+')) {
-            node = new_node(ND_ADD, node, new_node_num(expect_num()));
+            node = new_node(ND_ADD, node, mul());
         } else if (consume('-')) {
-            node = new_node(ND_SUB, node, new_node_num(expect_num()));
+            node = new_node(ND_SUB, node, mul());
         } else {
             return node;
         }
@@ -201,6 +238,13 @@ void gen(Node* node) {
             break;
         case ND_SUB:
             printf("\tsub rax, rbx\n");
+            break;
+        case ND_MUL:
+            printf("\timul rax, rbx\n");
+            break;
+        case ND_DIV:
+            printf("\tcqo\n");
+            printf("\tidiv rbx\n");
             break;
         default:
             error("unimplemented");
