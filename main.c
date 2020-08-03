@@ -127,6 +127,88 @@ Token* tokenize(char* p) {
     return head.next;
 }
 
+typedef enum {
+    ND_ADD,
+    ND_SUB,
+    ND_MUL,
+    ND_DIV,
+    ND_NUM,
+} NodeKind;
+
+typedef struct Node Node;
+
+struct Node {
+    NodeKind kind;
+    Node* lhs;
+    Node* rhs;
+    num_t num;
+};
+
+Node* new_node(NodeKind kind, Node* lhs, Node* rhs) {
+    Node* node = calloc(1, sizeof(Node));
+    node->kind = kind;
+    node->lhs = lhs;
+    node->rhs = rhs;
+    return node;
+}
+
+Node* new_node_num(num_t num) {
+    Node* node = calloc(1, sizeof(Node));
+    node->kind = ND_NUM;
+    node->num = num;
+    return node;
+}
+
+/*
+expr    = mul ("+" mul | "-" mul)*
+mul     = primary ("*" primary | "/" primary)*
+primary = num | "(" expr ")"
+ */
+
+/*
+expr = num ("+" num | "-" num)*
+ */
+
+Node* expr() {
+    Node* node = new_node_num(expect_num());
+
+    while (true) {
+        if (consume('+')) {
+            node = new_node(ND_ADD, node, new_node_num(expect_num()));
+        } else if (consume('-')) {
+            node = new_node(ND_SUB, node, new_node_num(expect_num()));
+        } else {
+            return node;
+        }
+    }
+}
+
+void gen(Node* node) {
+    if (node->kind == ND_NUM) {
+        printf("\tpush %ld\n", node->num);
+        return;
+    }
+
+    gen(node->lhs);
+    gen(node->rhs);
+
+    printf("\tpop rbx\n");
+    printf("\tpop rax\n");
+
+    switch (node->kind) {
+        case ND_ADD:
+            printf("\tadd rax, rbx\n");
+            break;
+        case ND_SUB:
+            printf("\tsub rax, rbx\n");
+            break;
+        default:
+            error("unimplemented");
+            break;
+    }
+    printf("\tpush rax\n");
+}
+
 int main(int argc, char** argv) {
     if (argc != 2) {
         error("not enough arguments, expected 1");
@@ -137,21 +219,12 @@ int main(int argc, char** argv) {
     printf("_main:\n");
 
     user_input = argv[1];
-    char* p = user_input;
-    token = tokenize(p);
+    token = tokenize(user_input);
+    Node* node = expr();
 
-    printf("\tmov rax, %ld\n", expect_num());
+    gen(node);
 
-    while (!at_eof()) {
-        if (consume('+')) {
-            printf("\tadd rax, %ld\n", expect_num());
-        } else if (consume('-')) {
-            printf("\tsub rax, %ld\n", expect_num());
-        } else {
-            error_at(token->str, "unexpected character");
-        }
-    }
-
+    printf("\tpop rax\n");
     printf("\tret\n");
     return 0;
 }
