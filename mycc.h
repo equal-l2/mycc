@@ -5,6 +5,7 @@
 int eprintf(const char* fmt, ...);
 void error(const char* fmt, ...);
 
+// parser
 typedef enum {
     TK_RESERVED,
     TK_IDENT,
@@ -24,6 +25,8 @@ struct Token {
 
 Token* tokenize(char* p);
 void debug_token(TokenKind);
+
+int get_offset(void);
 
 typedef enum {
     ND_ADD,
@@ -52,4 +55,5 @@ struct Node {
 void program(void);
 void debug_node(NodeKind);
 
+// codegen
 void gen(Node*);

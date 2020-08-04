@@ -63,4 +63,8 @@ assert 28 "a=28;"
 assert 15 "a=3;b=a+9;a+b;"
 assert 0 "a=4/3;b=4*3;a>b;"
 
+# step 10
+assert 1 "hello=532;world=552;hello!=world;"
+assert 42 "answer=42;answer;"
+
 echo OK

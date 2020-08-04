@@ -31,15 +31,15 @@ int main(int argc, char** argv) {
     printf(".globl _main\n");
     printf("_main:\n");
 
+    user_input = argv[1];
+    token = tokenize(user_input);
+    program();
+
     // prologue(allocate area for variables)
     printf(" #prologue\n");
     printf("\tpush rbp\n");
     printf("\tmov rbp, rsp\n");
-    printf("\tsub rsp, %d\n", 26*8);
-
-    user_input = argv[1];
-    token = tokenize(user_input);
-    program();
+    printf("\tsub rsp, %d\n", get_offset());
 
     int i = 0;
     while(code[i] != NULL) {

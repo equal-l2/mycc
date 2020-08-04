@@ -20,7 +20,6 @@ void error_at(const char* loc, char* fmt, ...) {
   exit(1);
 }
 
-
 Token* token;
 
 void debug_tk(TokenKind tk) {
@@ -89,8 +88,11 @@ Token* tokenize(char* p) {
             continue;
         }
         if ('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p++);
-            cur->len = 1;
+            int len = 1;
+            while ('a' <= *(p+len) && *(p+len) <= 'z') len++;
+            cur = new_token(TK_IDENT, cur, p);
+            cur->len = len;
+            p += len;
             continue;
         }
         if (isdigit(*p)) {
@@ -177,6 +179,30 @@ Node* new_node_num(int num) {
     return node;
 }
 
+typedef struct LVar LVar;
+
+struct LVar {
+    LVar* next;
+    char* name;
+    int len;
+    int offset;
+};
+
+LVar* locals;
+
+int get_offset(void) {
+    return (locals ? locals->offset : 0);
+}
+
+LVar* find_lvar(Token* tk) {
+    LVar* p = locals;
+    while (p) {
+        if (p->len == tk->len && !memcmp(p->name, tk->str, tk->len)) return p;
+        p = p->next;
+    }
+    return NULL;
+}
+
 /*
 program    = stmt*
 stmt       = expr ";"
@@ -202,6 +228,20 @@ Node* primary(void) {
         if (tk) {
             node = calloc(1, sizeof(Node));
             node->kind = ND_LVAR;
+
+            LVar* lvar = find_lvar(tk);
+
+            if (lvar) {
+                node->offset = lvar->offset;
+            } else {
+                lvar = calloc(1, sizeof(LVar));
+                lvar->name = tk->str;
+                lvar->len = tk->len;
+                lvar->offset = node->offset = (locals ? locals->offset + 8 : 8);
+                lvar->next = locals;
+                locals = lvar;
+            }
+
             node->offset = (tk->str[0] - 'a' + 1) * 8;
         } else {
             node = new_node_num(expect_num());

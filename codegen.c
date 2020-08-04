@@ -21,13 +21,12 @@ void gen(Node* node) {
             printf("\tpush rax\n");       // push value
             return;
         case ND_ASSIGN:
-            printf("  #assign\n");
             gen_lval(node->lhs);
             gen(node->rhs);
-            printf("\tpop rbx\n");       // load rhs value
-            printf("\tpop rax\n");       // load lhs addr
+            printf("\tpop rbx\n");        // load rhs value
+            printf("\tpop rax\n");        // load lhs addr
             printf("\tmov [rax], rbx\n"); // assign value to addr's pointing
-            printf("\tpush rbx\n");      // push rhs (for chained assign)
+            printf("\tpush rbx\n");       // push rhs (for chained assign)
             return;
     }
 
@@ -53,8 +52,8 @@ void gen(Node* node) {
             break;
         case ND_EQU:
             printf("\tcmp rax, rbx\n");
-            printf("\tsete al\n");      // move e flag-register to al (operand must be a byte register)
-            printf("\tmovzx rax, al\n");
+            printf("\tsete al\n");       // move e flag-register to al (operand must be a byte register)
+            printf("\tmovzx rax, al\n"); // store al to rax with zero expansion
             break;
         case ND_NEQ:
             printf("\tcmp rax, rbx\n");
