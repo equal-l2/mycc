@@ -1,4 +1,5 @@
-CFLAGS=-std=c11 -g -static
+CFLAGS=-fsanitize=address,undefined -std=c11 -g -static
+LDFLAGS+=-fsanitize=address,undefined
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 

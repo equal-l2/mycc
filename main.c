@@ -2,6 +2,7 @@
 
 extern char* user_input;
 extern Token* token;
+extern Node* code[];
 
 int eprintf(const char* fmt, ...) {
     va_list ap;
@@ -30,13 +31,27 @@ int main(int argc, char** argv) {
     printf(".globl _main\n");
     printf("_main:\n");
 
+    // prologue(allocate area for variables)
+    printf(" #prologue\n");
+    printf("\tpush rbp\n");
+    printf("\tmov rbp, rsp\n");
+    printf("\tsub rsp, %d\n", 26*8);
+
     user_input = argv[1];
     token = tokenize(user_input);
-    Node* node = expr();
+    program();
 
-    gen(node);
+    int i = 0;
+    while(code[i] != NULL) {
+        printf(" #code[%d]\n", i);
+        gen(code[i++]);
+        printf("\tpop rax\n");
+    }
 
-    printf("\tpop rax\n");
+    // epilogue
+    printf(" #epilogue\n");
+    printf("\tmov rsp, rbp\n");
+    printf("\tpop rbp\n");
     printf("\tret\n");
     return 0;
 }

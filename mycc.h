@@ -5,10 +5,9 @@
 int eprintf(const char* fmt, ...);
 void error(const char* fmt, ...);
 
-typedef long num_t;
-
 typedef enum {
     TK_RESERVED,
+    TK_IDENT,
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -18,9 +17,9 @@ typedef struct Token Token;
 struct Token {
     TokenKind kind;
     Token* next;
-    num_t num;
+    int num;
     char* str;
-    size_t len;
+    int len;
 };
 
 Token* tokenize(char* p);
@@ -36,6 +35,8 @@ typedef enum {
     ND_NEQ,
     ND_ELT,
     ND_LET,
+    ND_ASSIGN,
+    ND_LVAR,
 } NodeKind;
 
 typedef struct Node Node;
@@ -44,10 +45,11 @@ struct Node {
     NodeKind kind;
     Node* lhs;
     Node* rhs;
-    num_t num;
+    int num;
+    int offset;
 };
 
-Node* expr(void);
+void program(void);
 void debug_node(NodeKind);
 
 void gen(Node*);
