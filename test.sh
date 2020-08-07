@@ -65,6 +65,7 @@ assert 0 "a=4/3;b=4*3;a>b;"
 
 # step 10
 assert 1 "hello=532;world=552;hello!=world;"
+assert 1 "hello=532;hi=552;hello!=hi;"
 assert 42 "answer=42;answer;"
 
 echo OK

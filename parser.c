@@ -241,8 +241,6 @@ Node* primary(void) {
                 lvar->next = locals;
                 locals = lvar;
             }
-
-            node->offset = (tk->str[0] - 'a' + 1) * 8;
         } else {
             node = new_node_num(expect_num());
         }
