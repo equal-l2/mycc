@@ -68,4 +68,8 @@ assert 1 "hello=532;world=552;hello!=world;"
 assert 1 "hello=532;hi=552;hello!=hi;"
 assert 42 "answer=42;answer;"
 
+# step 11
+assert 100 "alpha=100;beta=50;return alpha;return alpha+beta;"
+assert 6 "return 1+5;"
+
 echo OK

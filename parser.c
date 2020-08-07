@@ -31,11 +31,19 @@ void debug_tk(TokenKind tk) {
 }
 
 bool consume(char* s) {
-    if (token->kind != TK_RESERVED || strlen(s) != token->len || memcmp(s, token->str, token->len)) {
+    if (token->kind != TK_RESERVED || strlen(s) != token->len || strncmp(s, token->str, token->len)) {
         return false;
     }
     token = token->next;
     return true;
+}
+
+bool consume_return() {
+    if (token->kind == TK_RET) {
+        token = token->next;
+        return true;
+    }
+    return false;
 }
 
 Token* consume_ident() {
@@ -75,6 +83,16 @@ Token* new_token(TokenKind kind, Token* cur, char* str) {
     return tok;
 }
 
+bool is_ident_begin(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
+         (c == '_');
+}
+
+bool is_alnum(char c) {
+  return is_ident_begin(c) || (c == '_');
+}
+
 Token* tokenize(char* p) {
     Token head;
     head.next = NULL;
@@ -87,9 +105,14 @@ Token* tokenize(char* p) {
             p++;
             continue;
         }
-        if ('a' <= *p && *p <= 'z') {
+        if (!strncmp(p, "return", 6) && !is_alnum(p[6])) {
+            cur = new_token(TK_RET, cur, p);
+            p += 6;
+            continue;
+        }
+        if (is_ident_begin(*p)) {
             int len = 1;
-            while ('a' <= *(p+len) && *(p+len) <= 'z') len++;
+            while (is_alnum(*(p+len))) len++;
             cur = new_token(TK_IDENT, cur, p);
             cur->len = len;
             p += len;
@@ -197,7 +220,7 @@ int get_offset(void) {
 LVar* find_lvar(Token* tk) {
     LVar* p = locals;
     while (p) {
-        if (p->len == tk->len && !memcmp(p->name, tk->str, tk->len)) return p;
+        if (p->len == tk->len && !strncmp(p->name, tk->str, tk->len)) return p;
         p = p->next;
     }
     return NULL;
@@ -205,7 +228,7 @@ LVar* find_lvar(Token* tk) {
 
 /*
 program    = stmt*
-stmt       = expr ";"
+stmt       = expr ";" | "return" expr ";"
 expr       = assign
 assign     = equ ("=" assign)?
 equ        = rel ("==" rel | "!=" rel)*
@@ -339,7 +362,14 @@ Node* expr(void) {
 }
 
 Node* stmt(void) {
-    Node* node = expr();
+    Node* node;
+    if (consume_return()) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_RET;
+        node->lhs = expr();
+    } else {
+        node = expr();
+    }
     expect(";");
     return node;
 }

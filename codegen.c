@@ -28,6 +28,13 @@ void gen(Node* node) {
             printf("\tmov [rax], rbx\n"); // assign value to addr's pointing
             printf("\tpush rbx\n");       // push rhs (for chained assign)
             return;
+        case ND_RET:
+            gen(node->lhs);
+            printf("\tpop rax\n");
+            printf("\tmov rsp, rbp\n");
+            printf("\tpop rbp\n");
+            printf("\tret\n");
+            return;
     }
 
     gen(node->lhs);
