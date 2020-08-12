@@ -68,6 +68,22 @@ void gen(Node* node) {
             printf("\tjmp .Lbegin%d\n", _cnt_begin);
             printf(".Lend%d:\n", _cnt_end);
             return;
+        case ND_FOR:
+            cnt_begin++;
+            cnt_end++;
+            if (node->init) gen(node->init);
+            printf(".Lbegin%d:\n", _cnt_begin);
+            if (node->cond) {
+                gen(node->cond);
+                printf("\tpop rax\n");
+                printf("\tcmp rax, 0\n");
+                printf("\tje .Lend%d\n", _cnt_end);
+            }
+            gen(node->lhs);
+            if (node->iter) gen(node->iter);
+            printf("\tjmp .Lbegin%d\n", _cnt_begin);
+            printf(".Lend%d:\n", _cnt_end);
+            return;
     }
 
     gen(node->lhs);

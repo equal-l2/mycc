@@ -31,18 +31,15 @@ void debug_tk(TokenKind tk) {
     }
 }
 
-bool consume(char* s) {
+bool peek(char* s) {
     if (token->kind != TK_RESERVED || strlen(s) != token->len || strncmp(s, token->str, token->len)) {
         return false;
     }
-    token = token->next;
     return true;
 }
 
-bool consume_token_kind(TokenKind tk) {
-    if (token->kind != tk) {
-        return false;
-    }
+bool consume(char* s) {
+    if (!peek(s)) return false;
     token = token->next;
     return true;
 }
@@ -128,6 +125,12 @@ Token* tokenize(char* p) {
             cur = new_token(TK_RESERVED, cur, p);
             cur->len = 5;
             p += 5;
+            continue;
+        }
+        if (!strncmp(p, "for", 3) && !is_alnum(p[3])) {
+            cur = new_token(TK_RESERVED, cur, p);
+            cur->len = 3;
+            p += 3;
             continue;
         }
         if (is_ident_begin(*p)) {
@@ -420,19 +423,23 @@ Node* stmt(void) {
     } else if (consume("while")) {
         node = calloc(1, sizeof(Node));
         node->kind = ND_WHILE;
+        expect("(");
         node->cond = expr();
+        expect(")");
         node->lhs = stmt();
     } else if (consume("for")) {
-        error("for is unimplemented");
-        /*
-        // TODO: how to lookahead expr?
         node = calloc(1, sizeof(Node));
         node->kind = ND_FOR;
-        node->init = ?
-        node->cond = ?
-        node->iter = ?
+
+        expect("(");
+        node->init = peek(";") ? NULL : expr();
+        expect(";");
+        node->cond = peek(";") ? NULL : expr();
+        expect(";");
+        node->iter = peek(")") ? NULL : expr();
+        expect(")");
+
         node->lhs = stmt();
-        */
     } else {
         node = expr();
         expect(";");
