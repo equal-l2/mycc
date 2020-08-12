@@ -11,7 +11,6 @@ typedef enum {
     TK_IDENT,
     TK_NUM,
     TK_EOF,
-    TK_RET,
 } TokenKind;
 
 typedef struct Token Token;
@@ -34,6 +33,7 @@ typedef enum {
     ND_SUB,
     ND_MUL,
     ND_DIV,
+    ND_REM,
     ND_NUM,
     ND_EQU,
     ND_NEQ,
@@ -42,6 +42,9 @@ typedef enum {
     ND_ASSIGN,
     ND_LVAR,
     ND_RET,
+    ND_IF,
+    ND_WHILE,
+    ND_FOR,
 } NodeKind;
 
 typedef struct Node Node;
@@ -52,6 +55,12 @@ struct Node {
     Node* rhs;
     int num;
     int offset;
+
+    Node* cond;
+
+    Node* init;
+    Node* iter;
+
 };
 
 void program(void);

@@ -72,4 +72,9 @@ assert 42 "answer=42;answer;"
 assert 100 "alpha=100;beta=50;return alpha;return alpha+beta;"
 assert 6 "return 1+5;"
 
+# step 12
+assert 10 "if (10 < 20) return 10; else return 20;"
+assert 10 "i=0;while(i<10) i = i+1; return i;"
+assert 5 "cnt=0;i=0;while((i=i+1)<=10) if(i%2==0)cnt=cnt+1; return cnt;"
+
 echo OK

@@ -25,6 +25,7 @@ Token* token;
 void debug_tk(TokenKind tk) {
     switch (tk) {
         case TK_RESERVED: eprintf("TK_RESERVED\n"); break;
+        case TK_IDENT: eprintf("TK_IDENT\n"); break;
         case TK_NUM: eprintf("TK_NUM\n"); break;
         case TK_EOF: eprintf("TK_EOF\n"); break;
     }
@@ -38,12 +39,12 @@ bool consume(char* s) {
     return true;
 }
 
-bool consume_return() {
-    if (token->kind == TK_RET) {
-        token = token->next;
-        return true;
+bool consume_token_kind(TokenKind tk) {
+    if (token->kind != tk) {
+        return false;
     }
-    return false;
+    token = token->next;
+    return true;
 }
 
 Token* consume_ident() {
@@ -106,8 +107,27 @@ Token* tokenize(char* p) {
             continue;
         }
         if (!strncmp(p, "return", 6) && !is_alnum(p[6])) {
-            cur = new_token(TK_RET, cur, p);
+            cur = new_token(TK_RESERVED, cur, p);
+            cur->len = 6;
             p += 6;
+            continue;
+        }
+        if (!strncmp(p, "if", 2) && !is_alnum(p[2])) {
+            cur = new_token(TK_RESERVED, cur, p);
+            cur->len = 2;
+            p += 2;
+            continue;
+        }
+        if (!strncmp(p, "else", 4) && !is_alnum(p[4])) {
+            cur = new_token(TK_RESERVED, cur, p);
+            cur->len = 4;
+            p += 4;
+            continue;
+        }
+        if (!strncmp(p, "while", 5) && !is_alnum(p[5])) {
+            cur = new_token(TK_RESERVED, cur, p);
+            cur->len = 5;
+            p += 5;
             continue;
         }
         if (is_ident_begin(*p)) {
@@ -155,6 +175,7 @@ Token* tokenize(char* p) {
             case '-':
             case '*':
             case '/':
+            case '%':
             case '(':
             case ')':
             case ';':
@@ -167,6 +188,16 @@ Token* tokenize(char* p) {
     }
 
     new_token(TK_EOF, cur, p);
+
+    /*
+    eprintf("Tokenize end\n");
+    Token* t = head.next;
+    while(t) {
+        debug_tk(t->kind);
+        eprintf("len: %d\n", t->len);
+        t = t->next;
+    }
+    */
 
     return head.next;
 }
@@ -227,16 +258,20 @@ LVar* find_lvar(Token* tk) {
 }
 
 /*
-program    = stmt*
-stmt       = expr ";" | "return" expr ";"
-expr       = assign
-assign     = equ ("=" assign)?
-equ        = rel ("==" rel | "!=" rel)*
-rel        = add ("<" add | "<=" add | ">" add | ">=" add)*
-add        = mul ("+" mul | "-" mul)*
-mul        = unary ("*" unary | "/" unary)*
-unary      = ("+" | "-")? primary
-primary    = num | ident | "(" expr ")"
+program = stmt*
+stmt    = expr ";"
+          | "return" expr ";"
+          | "if" "(" expr ")" stmt ("else" stmt)?
+          | "while" "(" expr ")" stmt
+          | "for" "(" expr? ";" expr? ";" expr?" ")" stmt
+expr    = assign
+assign  = equ ("=" assign)?
+equ     = rel ("==" rel | "!=" rel)*
+rel     = add ("<" add | "<=" add | ">" add | ">=" add)*
+add     = mul ("+" mul | "-" mul)*
+mul     = unary ("*" unary | "/" unary | "%" unary)*
+unary   = ("+" | "-")? primary
+primary = num | ident | "(" expr ")"
  */
 
 Node* expr(void);
@@ -291,6 +326,8 @@ Node* mul(void) {
             node = new_node(ND_MUL, node, unary());
         } else if (consume("/")) {
             node = new_node(ND_DIV, node, unary());
+        } else if (consume("%")) {
+            node = new_node(ND_REM, node, unary());
         } else {
             return node;
         }
@@ -363,14 +400,43 @@ Node* expr(void) {
 
 Node* stmt(void) {
     Node* node;
-    if (consume_return()) {
+    if (consume("return")) {
         node = calloc(1, sizeof(Node));
         node->kind = ND_RET;
         node->lhs = expr();
+        expect(";");
+    } else if (consume("if")) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_IF;
+
+        expect("(");
+        node->cond = expr();
+        expect(")");
+
+        node->lhs = stmt();
+        if (consume("else")) {
+            node->rhs = stmt();
+        }
+    } else if (consume("while")) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_WHILE;
+        node->cond = expr();
+        node->lhs = stmt();
+    } else if (consume("for")) {
+        error("for is unimplemented");
+        /*
+        // TODO: how to lookahead expr?
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_FOR;
+        node->init = ?
+        node->cond = ?
+        node->iter = ?
+        node->lhs = stmt();
+        */
     } else {
         node = expr();
+        expect(";");
     }
-    expect(";");
     return node;
 }
 

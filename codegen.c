@@ -9,7 +9,14 @@ void gen_lval(Node* node) {
     printf("\tpush rax\n");                  // push addr of var
 }
 
+static int cnt_else;
+static int cnt_end;
+static int cnt_begin;
+
 void gen(Node* node) {
+    int _cnt_else = cnt_else;
+    int _cnt_end = cnt_end;
+    int _cnt_begin = cnt_begin;
     switch (node->kind) {
         case ND_NUM:
             printf("\tpush %d\n", node->num);
@@ -35,6 +42,32 @@ void gen(Node* node) {
             printf("\tpop rbp\n");
             printf("\tret\n");
             return;
+        case ND_IF:
+            gen(node->cond);
+            cnt_else++;
+            cnt_end++;
+            printf("\tpop rax\n");
+            printf("\tcmp rax, 0\n");
+            printf("\tje .Lelse%d\n", _cnt_else);
+            printf("  #If body\n");
+            gen(node->lhs);
+            printf("\tjmp .Lend%d\n", _cnt_end);
+            printf(".Lelse%d:\n", _cnt_else);
+            if (node->rhs) gen(node->rhs);
+            printf(".Lend%d:\n", _cnt_end);
+            return;
+        case ND_WHILE:
+            cnt_begin++;
+            cnt_end++;
+            printf(".Lbegin%d:\n", _cnt_begin);
+            gen(node->cond);
+            printf("\tpop rax\n");
+            printf("\tcmp rax, 0\n");
+            printf("\tje .Lend%d\n", _cnt_end);
+            gen(node->lhs);
+            printf("\tjmp .Lbegin%d\n", _cnt_begin);
+            printf(".Lend%d:\n", _cnt_end);
+            return;
     }
 
     gen(node->lhs);
@@ -56,6 +89,11 @@ void gen(Node* node) {
         case ND_DIV:
             printf("\tcqo\n");          // extend rax to rdx:rax
             printf("\tidiv rbx\n");     // divide rdx:rax by rbx
+            break;
+        case ND_REM:
+            printf("\tcqo\n");
+            printf("\tidiv rbx\n");
+            printf("\tmov rax, rdx\n");
             break;
         case ND_EQU:
             printf("\tcmp rax, rbx\n");
