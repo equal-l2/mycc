@@ -30,10 +30,10 @@ void gen(Node* node) {
         case ND_ASSIGN:
             gen_lval(node->lhs);
             gen(node->rhs);
-            printf("\tpop rbx\n");        // load rhs value
+            printf("\tpop rcx\n");        // load rhs value
             printf("\tpop rax\n");        // load lhs addr
-            printf("\tmov [rax], rbx\n"); // assign value to addr's pointing
-            printf("\tpush rbx\n");       // push rhs (for chained assign)
+            printf("\tmov [rax], rcx\n"); // assign value to addr's pointing
+            printf("\tpush rcx\n");       // push rhs (for chained assign)
             return;
         case ND_RET:
             gen(node->lhs);
@@ -89,45 +89,45 @@ void gen(Node* node) {
     gen(node->lhs);
     gen(node->rhs);
 
-    printf("\tpop rbx\n");
+    printf("\tpop rcx\n");
     printf("\tpop rax\n");
 
     switch (node->kind) {
         case ND_ADD:
-            printf("\tadd rax, rbx\n");
+            printf("\tadd rax, rcx\n");
             break;
         case ND_SUB:
-            printf("\tsub rax, rbx\n");
+            printf("\tsub rax, rcx\n");
             break;
         case ND_MUL:
-            printf("\timul rax, rbx\n");
+            printf("\timul rax, rcx\n");
             break;
         case ND_DIV:
             printf("\tcqo\n");          // extend rax to rdx:rax
-            printf("\tidiv rbx\n");     // divide rdx:rax by rbx
+            printf("\tidiv rcx\n");     // divide rdx:rax by rcx
             break;
         case ND_REM:
             printf("\tcqo\n");
-            printf("\tidiv rbx\n");
+            printf("\tidiv rcx\n");
             printf("\tmov rax, rdx\n");
             break;
         case ND_EQU:
-            printf("\tcmp rax, rbx\n");
+            printf("\tcmp rax, rcx\n");
             printf("\tsete al\n");       // move e flag-register to al (operand must be a byte register)
             printf("\tmovzx rax, al\n"); // store al to rax with zero expansion
             break;
         case ND_NEQ:
-            printf("\tcmp rax, rbx\n");
+            printf("\tcmp rax, rcx\n");
             printf("\tsetne al\n");
             printf("\tmovzx rax, al\n");
             break;
         case ND_LET:
-            printf("\tcmp rax, rbx\n");
+            printf("\tcmp rax, rcx\n");
             printf("\tsetl al\n");
             printf("\tmovzx rax, al\n");
             break;
         case ND_ELT:
-            printf("\tcmp rax, rbx\n");
+            printf("\tcmp rax, rcx\n");
             printf("\tsetle al\n");
             printf("\tmovzx rax, al\n");
             break;
