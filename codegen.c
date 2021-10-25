@@ -4,9 +4,9 @@ void gen_lval(Node* node) {
     if (node->kind != ND_LVAR) {
         error("variable expected");
     }
-    printf("\tmov rax, rbp\n");              // load base ptr
-    printf("\tsub rax, %d\n", node->offset); // sub offset
-    printf("\tpush rax\n");                  // push addr of var
+    printf("\tmov rax, rbp      # load base ptr\n");
+    printf("\tsub rax, %d       # substract offset\n", node->offset);
+    printf("\tpush rax          # push resulting address\n");
 }
 
 static int cnt_else;
@@ -22,25 +22,31 @@ void gen(Node* node) {
             printf("\tpush %d\n", node->num);
             return;
         case ND_LVAR:
+            puts("# begin ND_LVAR");
             gen_lval(node);
-            printf("\tpop rax\n");        // load addr of var
-            printf("\tmov rax, [rax]\n"); // load var value
-            printf("\tpush rax\n");       // push value
+            printf("\tpop rax           # load address\n");
+            printf("\tmov rax, [rax]    # load value\n");
+            printf("\tpush rax          # push resulting value\n");
+            puts("# end ND_LVAR");
             return;
         case ND_ASSIGN:
+            puts("# begin ND_ASSIGN");
             gen_lval(node->lhs);
             gen(node->rhs);
-            printf("\tpop rcx\n");        // load rhs value
-            printf("\tpop rax\n");        // load lhs addr
-            printf("\tmov [rax], rcx\n"); // assign value to addr's pointing
-            printf("\tpush rcx\n");       // push rhs (for chained assign)
+            printf("\tpop rcx           # load lhs value\n");
+            printf("\tpop rax           # load rhs value\n");
+            printf("\tmov [rax], rcx    # place value to addr's pointing\n");
+            printf("\tpush rcx          # push rhs (for chained assignment)\n");
+            puts("# end ND_ASSIGN");
             return;
         case ND_RET:
+            puts("# begin ND_RET");
             gen(node->lhs);
-            printf("\tpop rax\n");
-            printf("\tmov rsp, rbp\n");
-            printf("\tpop rbp\n");
+            printf("\tpop rax      # load expr value\n");
+            printf("\tmov rsp, rbp # restore stack ptr\n");
+            printf("\tpop rbp      # restore base ptr\n");
             printf("\tret\n");
+            puts("# end ND_RET");
             return;
         case ND_IF:
             gen(node->cond);
@@ -57,6 +63,7 @@ void gen(Node* node) {
             printf(".Lend%d:\n", _cnt_end);
             return;
         case ND_WHILE:
+            puts("# begin ND_WHILE");
             cnt_begin++;
             cnt_end++;
             printf(".Lbegin%d:\n", _cnt_begin);
@@ -67,8 +74,10 @@ void gen(Node* node) {
             gen(node->lhs);
             printf("\tjmp .Lbegin%d\n", _cnt_begin);
             printf(".Lend%d:\n", _cnt_end);
+            puts("# end ND_WHILE");
             return;
         case ND_FOR:
+            puts("# begin ND_FOR");
             cnt_begin++;
             cnt_end++;
             if (node->init) gen(node->init);
@@ -83,14 +92,15 @@ void gen(Node* node) {
             if (node->iter) gen(node->iter);
             printf("\tjmp .Lbegin%d\n", _cnt_begin);
             printf(".Lend%d:\n", _cnt_end);
+            puts("# end ND_FOR");
             return;
     }
 
     gen(node->lhs);
     gen(node->rhs);
 
-    printf("\tpop rcx\n");
-    printf("\tpop rax\n");
+    printf("\tpop rcx           # load lhs value\n");
+    printf("\tpop rax           # load rhs value\n");
 
     switch (node->kind) {
         case ND_ADD:

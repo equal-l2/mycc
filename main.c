@@ -35,23 +35,22 @@ int main(int argc, char** argv) {
     token = tokenize(user_input);
     program();
 
-    // prologue(allocate area for variables)
-    printf(" #prologue\n");
-    printf("\tpush rbp\n");
-    printf("\tmov rbp, rsp\n");
-    printf("\tsub rsp, %d\n", get_offset());
+    printf("# prologue\n");
+    printf("\tpush rbp       # save base ptr\n");
+    printf("\tmov rbp, rsp   # set base to current stack ptr\n");
+    printf("\tsub rsp, %-4d  # allocate area for variables\n", get_offset());
 
     int i = 0;
     while(code[i] != NULL) {
-        printf(" #code[%d]\n", i);
+        printf("# begin code[%d]\n", i);
         gen(code[i++]);
         printf("\tpop rax\n");
+        printf("# end code[%d]\n", i);
     }
 
-    // epilogue
-    printf(" #epilogue\n");
-    printf("\tmov rsp, rbp\n");
-    printf("\tpop rbp\n");
+    printf("# epilogue\n");
+    printf("\tmov rsp, rbp # restore stack ptr\n");
+    printf("\tpop rbp      # restore base ptr\n");
     printf("\tret\n");
     return 0;
 }
